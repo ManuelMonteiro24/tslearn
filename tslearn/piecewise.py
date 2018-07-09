@@ -384,6 +384,9 @@ class SymbolicAggregateApproximation(PiecewiseAggregateApproximation):
     def __init__(self, n_segments, alphabet_size_avg,variables_size = 1,multivariate_output = None):
         PiecewiseAggregateApproximation.__init__(self, n_segments)
         self.alphabet_size_avg = alphabet_size_avg
+
+        self.multivariate_output = multivariate_output
+
         if multivariate_output == True:
             self.breakpoints_avg_ = _breakpoints(self.alphabet_size_avg,1.)
         else:
@@ -407,7 +410,7 @@ class SymbolicAggregateApproximation(PiecewiseAggregateApproximation):
         """
         return PiecewiseAggregateApproximation.fit(self, X, y)
 
-    def fit_transform(self, X, y=None, variables_size = 1, multivariate_output = None):
+    def fit_transform(self, X, y=None):
         #mudei o fit_params
         """Fit a SAX representation and transform the data accordingly.
 
@@ -421,12 +424,12 @@ class SymbolicAggregateApproximation(PiecewiseAggregateApproximation):
         numpy.ndarray of integers with shape (n_ts, n_segments, d)
             SAX-Transformed dataset
         """
-        X_ = to_time_series_dataset(X,variables_size)
-        return self._fit(X_[0])._transform(X_,None,variables_size,multivariate_output)
+        X_ = to_time_series_dataset(X,self.variables_size)
+        return self._fit(X_[0])._transform(X_,None)
 
-    def _transform(self, X, y=None,variables_size = 1, multivariate_output = None):
-        X_paa = PiecewiseAggregateApproximation._transform(self, X, None, variables_size)
-        return _paa_to_symbols(X_paa, self.breakpoints_avg_,variables_size,multivariate_output)
+    def _transform(self, X, y=None):
+        X_paa = PiecewiseAggregateApproximation._transform(self, X, None, self.variables_size)
+        return _paa_to_symbols(X_paa, self.breakpoints_avg_,self.variables_size,self.multivariate_output)
 
     def transform(self, X, y=None):
         """Transform a dataset of time series into its SAX representation.

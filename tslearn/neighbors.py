@@ -16,7 +16,7 @@ from tslearn.utils import to_time_series_dataset
 class KNeighborsTimeSeriesMixin(KNeighborsMixin):
     """Mixin for k-neighbors searches on Time Series."""
 
-    def kneighbors(self, X=None,variables_size=1, n_neighbors=None, return_distance=True):
+    def kneighbors(self, X=None,variables_size=1, multivariate_output=None, n_neighbors=None, return_distance=True):
         """Finds the K-neighbors of a point.
 
         Returns indices of and distances to the neighbors of each point.
@@ -66,8 +66,8 @@ class KNeighborsTimeSeriesMixin(KNeighborsMixin):
                              "'sqeuclidean' or 'cityblock')" % self.metric)
 
         if self.metric == "min_dist":
-            #print("variablesize",variables_size )
-            full_dist_matrix = cdist_fun(X, self._fit_X, self.metric_params, variables_size)
+            #print("variablesize: ", variables_size )
+            full_dist_matrix = cdist_fun(X, self._fit_X, self.metric_params, variables_size, multivariate_output)
             #print("full dist matrix ", full_dist_matrix)
             #print("len:", len(full_dist_matrix))
         else:
@@ -193,12 +193,14 @@ class KNeighborsTimeSeriesClassifier(KNeighborsClassifier, KNeighborsTimeSeriesM
     >>> clf.predict([1, 2.2, 3.5])
     array([0])
     """
-    def __init__(self, n_neighbors=5, weights='uniform', metric="dtw", metric_params=None, variables_size=1):
+    def __init__(self, n_neighbors=5, weights='uniform', metric="dtw", metric_params=None, variables_size=1, multivariate_output=None):
         KNeighborsClassifier.__init__(self, n_neighbors=n_neighbors, weights=weights, algorithm='brute')
         self.metric = metric
         self.metric_params = metric_params
+        self.variables_size = variables_size
+        self.multivariate_output = multivariate_output
 
-    def fit(self, X, y,variables_size=1):
+    def fit(self, X, y):
         """Fit the model using X as training data and y as target values
 
         Parameters
@@ -208,10 +210,10 @@ class KNeighborsTimeSeriesClassifier(KNeighborsClassifier, KNeighborsTimeSeriesM
         y : array-like, shape (n_ts, )
             Target values.
         """
-        self._fit_X = to_time_series_dataset(X,variables_size)
+        self._fit_X = to_time_series_dataset(X,self.variables_size)
         self._fit_y = numpy.array(y)
 
-    def predict(self, X,variables_size=1):
+    def predict(self, X):
         """Predict the class labels for the provided data
 
         Parameters
@@ -219,8 +221,8 @@ class KNeighborsTimeSeriesClassifier(KNeighborsClassifier, KNeighborsTimeSeriesM
         X : array-like, shape (n_ts, sz, d)
             Test samples.
         """
-        X_ = to_time_series_dataset(X,variables_size)
-        neigh_dist, neigh_ind = self.kneighbors(X_,variables_size)
+        X_ = to_time_series_dataset(X,self.variables_size)
+        neigh_dist, neigh_ind = self.kneighbors(X_,self.variables_size,self.multivariate_output)
 
         weights = _get_weights(neigh_dist, self.weights)
 

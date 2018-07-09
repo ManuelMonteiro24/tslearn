@@ -53,9 +53,10 @@ def multivariate_normalization(data,variables_size):
 
         try:
             inverse_B = numpy.linalg.inv(B)
-            #print("inverse matrix: ", inverse_covariance_matrix)
+            #print("inverse matrix: ", inverse_B)
         except numpy.linalg.LinAlgError:
             # Not invertible. Skip this one.
+            # Non invertable cases Uwave
             print("not invertible")
             sys.exit()
 

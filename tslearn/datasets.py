@@ -52,7 +52,7 @@ def extract_from_zip_url(url, target_dir=None, verbose=False):
         return None
 
 #running for several atributes
-def read_dataset_from_file(dataset_name, atributes, length_ts, classes ):
+def read_dataset_from_file(dataset_name, atributes, length_ts):
     """file must be in the Directory the program is running"""
     dirname = os.path.abspath(os.path.dirname(sys.argv[0]))
     train_test_str = ["_TRAIN","_TEST"]

@@ -92,8 +92,9 @@ def euclidean_multivar_matrix(s1, s2):
 #            min_dist_table[i,j]=(breakpoints[i-1]-breakpoints[j-2])**2
             # the distance matrix is symmetric
 #            min_dist_table[j,i] = min_dist_table[i,j]
-def min_dist_matrix(s1, s2, alphabet_size, variables_size = 1,compression_ratio = 1):
-    if variables_size == 1:
+def min_dist_matrix(s1, s2, alphabet_size, variables_size = 1,multivariate_output=None,compression_ratio = 1):
+    if multivariate_output == None:
+        #print("lens s1 s2", len(s1), len(s2))
         dist_table=numpy.zeros((len(s1),len(s2)))
         len1 = len(s1)
         len2 = len(s2)
