@@ -33,11 +33,12 @@ def test_multivariate_methods(dataset_name,variables,ts_length,metric_name,segme
         X_train = z_normalize(X_train,variables)
         X_test = z_normalize(X_test,variables)
 
-    #for i in range(0,len(X_train[0])):
-    #    print("cov: ", numpy.cov([X_train[0][i], X_train[1][i]]))
-    #    print("mean1 :", ts_mean_single_var(X_train[0][i]))
-    #    print("mean2: ", ts_mean_single_var(X_train[1][i]))
-    #sys.exit()
+    for i in range(0,len(X_train[0])):
+        print("cov: ", numpy.cov([X_train[0][i], X_train[1][i], X_train[2][i]]))
+        print("mean1 :", ts_mean_single_var(X_train[0][i]))
+        print("mean2: ", ts_mean_single_var(X_train[1][i]))
+        print("mean2: ", ts_mean_single_var(X_train[2][i]))
+    sys.exit()
 
     if metric_name == "min_dist":
         sax_trans = SymbolicAggregateApproximation(n_segments=segments, alphabet_size_avg=alphabet,variables_size=variables, multivariate_output= sax_multivariate_output)

@@ -22,6 +22,9 @@ def z_normalize(dataset,variables_size):
                 dataset[u][j][i] = numpy.array([(dataset[u][j][i] - mean)/variance])
     return dataset
 
+#do this after separate_atributes_dataset
+#running for several Attributes
+#resolves dependencies between variables!
 def multivariate_normalization(data,variables_size):
     for j in range(0,len(data[0])):
         means = []
@@ -40,8 +43,16 @@ def multivariate_normalization(data,variables_size):
             #print("ts1: ", ts1)
             #print("ts2: ", ts2)
 
-        covariance_matrix = numpy.cov(numpy.array(ts_s))
-        #print("matrix: ", covariance_matrix)
+        #print("ts_with_several_variables:", ts_s)
+        #print("variables_size:", len(ts_s))
+        #print("ts_length:", len(ts_s[0]))
+
+        #numpy.cov faz arredondamentos para zero o que leva a matrix nao ser semidefinitava pos
+        #covariance_matrix = numpy.cov(ts_s)
+        covariance_matrix = my_covariance_matrix(ts_s,variables_size)
+        print("matrix: ", covariance_matrix)
+        #w eigenvalues
+        #v eigenvectores
         w, v= numpy.linalg.eig(covariance_matrix)
         #print("W: ", w)
         #print("v: ", v)
@@ -66,48 +77,6 @@ def multivariate_normalization(data,variables_size):
                 atributes_together.append(data[u][j][i])
             result = numpy.subtract(atributes_together, numpy.array(means))
             result = numpy.matmul(inverse_B,result)
-            for u in range(0,variables_size):
-                data[u][j][i] = result[u]
-    return data
-
-#do this after separate_atributes_dataset
-##running for several Attributes
-##NOT CORRECT
-def multivariate_normalization_not_complete(data,variables_size):
-    for j in range(0,len(data[0])):
-        means = []
-        ts_s = []
-        for u in range(0,variables_size):
-            means.append(ts_mean_single_var(data[u][j]))
-            ts_s.append(data[u][j])
-            #print("mean1: ",mean1)
-            #print("mean2: ",mean2)
-
-            #not needed after all??
-            #std_var1 = numpy.std(ts1)
-            #std_var2 = numpy.std(ts2)
-            #print("stdvar: ",std_var1)
-            #print("stdvar: ",std_var2)
-            #print("ts1: ", ts1)
-            #print("ts2: ", ts2)
-
-        covariance_matrix = numpy.cov(numpy.array(ts_s))
-        #print("matrix: ", covariance_matrix)
-
-        try:
-            inverse_covariance_matrix = numpy.linalg.inv(covariance_matrix)
-            rooted_inverse_covariance_matrix = sqrtm(inverse_covariance_matrix)
-            #print("inverse matrix: ", inverse_covariance_matrix)
-        except numpy.linalg.LinAlgError:
-            # Not invertible. Skip this one.
-            print("not invertible")
-
-        for i in range(0,len(data[0][j])):
-            atributes_together = []
-            for u in range(0,variables_size):
-                atributes_together.append(data[u][j][i])
-            result = numpy.subtract(atributes_together, numpy.array(means))
-            result = numpy.matmul(result,rooted_inverse_covariance_matrix)
             for u in range(0,variables_size):
                 data[u][j][i] = result[u]
     return data

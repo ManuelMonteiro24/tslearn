@@ -7,6 +7,23 @@ import numpy
 __author__ = 'Romain Tavenard romain.tavenard[at]univ-rennes2.fr'
 
 
+def my_covariance_matrix(data,variables_size):
+    cov_matrix = numpy.zeros((variables_size,variables_size))
+
+    #diagonal!
+    for i in range(0,variables_size):
+        cov_matrix[i,i] = numpy.var(data[i])
+        for j in range(0,variables_size):
+            cov_matrix[i,j] = cov_funct(data[i], data[j])
+            #matrix is simmetric!
+            cov_matrix[j,i] = cov_matrix[i,j]
+    return cov_matrix        
+
+def cov_funct(vect1,vect2):
+    return numpy.mean(numpy.multiply(vect1,vect2)) - (numpy.mean(vect1)*numpy.mean(vect2))
+
+
+
 #running for several atributes
 def separate_atributes_dataset(X,variables_size):
 
