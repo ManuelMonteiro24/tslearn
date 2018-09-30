@@ -59,10 +59,7 @@ def itakura_mask(int sz1, int sz2):
 @cython.boundscheck(False) # turn off bounds-checking for entire function
 @cython.wraparound(False)  # turn off negative index wrapping for entire function
 def ts_size(numpy.ndarray[DTYPE_t, ndim=2] ts):
-    cdef int sz = ts.shape[0]
-    while not numpy.any(numpy.isfinite(ts[sz - 1])):
-        sz -= 1
-    return sz
+    return len(ts)
 
 
 @cython.boundscheck(False)
@@ -283,4 +280,3 @@ def lb_envelope(numpy.ndarray[DTYPE_t, ndim=2] time_series, int radius):
 #                                                                  enveloppes[j, :, 1].reshape((-1, 1))))
 #
 #     return cross_dist
-

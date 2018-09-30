@@ -2,13 +2,14 @@
 The :mod:`tslearn.utils` module includes various utilities.
 """
 
-import numpy
+import numpy, mpmath
 
 __author__ = 'Romain Tavenard romain.tavenard[at]univ-rennes2.fr'
 
 
 def my_covariance_matrix(data,variables_size):
-    cov_matrix = numpy.zeros((variables_size,variables_size))
+    mpmath.dps = 15
+    cov_matrix = mpmath.matrix(variables_size,variables_size)
 
     #diagonal!
     for i in range(0,variables_size):
@@ -17,7 +18,7 @@ def my_covariance_matrix(data,variables_size):
             cov_matrix[i,j] = cov_funct(data[i], data[j])
             #matrix is simmetric!
             cov_matrix[j,i] = cov_matrix[i,j]
-    return cov_matrix        
+    return cov_matrix
 
 def cov_funct(vect1,vect2):
     return numpy.mean(numpy.multiply(vect1,vect2)) - (numpy.mean(vect1)*numpy.mean(vect2))
@@ -119,7 +120,7 @@ def to_time_series(ts,remove_nans=False):
     if ts_out.dtype != numpy.float:
         ts_out = ts_out.astype(numpy.float)
     if remove_nans:
-        ts_out = ts_out[:ts_size(ts_out)]
+        ts_out = ts_out[:len(ts)]
     return ts_out
 
 #running for several atributes
@@ -173,7 +174,7 @@ def to_time_series_dataset(dataset,variables_size=1,dtype=numpy.float):
             if numpy.array(dataset[j][0]).ndim == 0:
                 dataset[j] = [dataset[j]]
             n_ts = len(dataset[j])
-            max_sz = max([ts_size(to_time_series(ts)) for ts in dataset[j]])
+            max_sz = len(dataset[j][0])
             d = to_time_series(dataset[j][0],2).shape[1]
             dataset_out = numpy.zeros((n_ts, max_sz, d), dtype=dtype) + numpy.nan
             for i in range(n_ts):

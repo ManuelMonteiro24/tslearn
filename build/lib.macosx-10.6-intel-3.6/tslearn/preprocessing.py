@@ -2,7 +2,7 @@
 The :mod:`tslearn.preprocessing` module gathers time series scalers.
 """
 
-import numpy, sys
+import numpy, sys, mpmath
 from sklearn.base import TransformerMixin
 from scipy.interpolate import interp1d
 from scipy.linalg import *
@@ -17,7 +17,10 @@ def z_normalize(dataset,variables_size):
     for u in range(0,variables_size):
         for j in range(0,len(dataset[0])):
             mean = ts_mean_single_var(dataset[u][j])
+            #this stddev is reaching 0 problem?? happens very rarely
             variance = numpy.std(dataset[u][j])
+            if variance == 0:
+                print("ZERO STDDEV, ts", dataset[u][j])
             for i in range(0,len(dataset[u][j])):
                 dataset[u][j][i] = numpy.array([(dataset[u][j][i] - mean)/variance])
     return dataset
@@ -50,22 +53,26 @@ def multivariate_normalization(data,variables_size):
         #numpy.cov faz arredondamentos para zero o que leva a matrix nao ser semidefinitava pos
         #covariance_matrix = numpy.cov(ts_s)
         covariance_matrix = my_covariance_matrix(ts_s,variables_size)
-        print("matrix: ", covariance_matrix)
+        #print("covariance_matrix:", covariance_matrix)
         #w eigenvalues
         #v eigenvectores
-        w, v= numpy.linalg.eig(covariance_matrix)
-        #print("W: ", w)
-        #print("v: ", v)
-        diagonal = numpy.diag(w)
-        #print("iden: ", diagonal)
-        result = sqrtm(diagonal)
-        #print("and squared: ", result)
-        B = numpy.matmul(v,result)
+        w, v= mpmath.eig(covariance_matrix)
+        #print("w,v:",w,v)
+        diagonal = mpmath.diag(w)
+        #print("diagonal:",diagonal)
+        result = mpmath.sqrtm(diagonal)
+        #print("result(sqrt diagonal):", result)
+        B = v*result
 
         try:
-            inverse_B = numpy.linalg.inv(B)
+            inverse_B = B**-1
             #print("inverse matrix: ", inverse_B)
-        except numpy.linalg.LinAlgError:
+        except ZeroDivisionError as error:
+            # Not invertible. Skip this one.
+            # Non invertable cases Uwave
+            print("not invertible")
+            sys.exit()
+        except Exception as exception:
             # Not invertible. Skip this one.
             # Non invertable cases Uwave
             print("not invertible")
@@ -75,10 +82,15 @@ def multivariate_normalization(data,variables_size):
             atributes_together = []
             for u in range(0,variables_size):
                 atributes_together.append(data[u][j][i])
-            result = numpy.subtract(atributes_together, numpy.array(means))
-            result = numpy.matmul(inverse_B,result)
+            atributes_together = mpmath.matrix(atributes_together)
+            result = atributes_together - mpmath.matrix(means)
+            result = inverse_B * result
             for u in range(0,variables_size):
-                data[u][j][i] = result[u]
+                #print("result[u]", result[u])
+                if type(result[u]) is mpmath.mpc:
+                    data[u][j][i] = result[u].real
+                else:
+                    data[u][j][i] = result[u]
     return data
 
 class TimeSeriesResampler(TransformerMixin):
