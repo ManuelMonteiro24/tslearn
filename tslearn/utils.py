@@ -2,27 +2,48 @@
 The :mod:`tslearn.utils` module includes various utilities.
 """
 
-import numpy, mpmath
+import numpy, mpmath, math
+from decimal import *
 
 __author__ = 'Romain Tavenard romain.tavenard[at]univ-rennes2.fr'
 
 
 def my_covariance_matrix(data,variables_size):
-    mpmath.dps = 15
-    cov_matrix = mpmath.matrix(variables_size,variables_size)
+    cov_matrix = mpmath.matrix(variables_size)
+    #cov_matrix = numpy.zeros((variables_size,variables_size))
 
-    #diagonal!
     for i in range(0,variables_size):
-        cov_matrix[i,i] = numpy.var(data[i])
+        #diagonal!
+        cov_matrix[i,i] = mpmath.mpf(my_variance(data[i]))
         for j in range(0,variables_size):
-            cov_matrix[i,j] = cov_funct(data[i], data[j])
+            cov_matrix[i,j] = cov_funct(data[i],data[j])
             #matrix is simmetric!
             cov_matrix[j,i] = cov_matrix[i,j]
     return cov_matrix
 
-def cov_funct(vect1,vect2):
-    return numpy.mean(numpy.multiply(vect1,vect2)) - (numpy.mean(vect1)*numpy.mean(vect2))
+def my_variance(vect):
+    #mexer no vect?
+    vect_mean = my_mean(vect)
+    for i in range(0,len(vect)):
+        vect[i] = mpmath.mpf(vect[i] - vect_mean)
+    return mpmath.fsum(abs(vect)**2)/mpmath.mpf(len(vect))
 
+def cov_funct(vect1,vect2):
+    return mpmath.mpf(my_mean(my_vector_multp(vect1,vect2)) - (my_mean(vect1)*my_mean(vect2)))
+
+
+def my_vector_multp(vect1,vect2):
+    returnvect = []
+    for j in range(0,len(vect1)):
+        returnvect.append(mpmath.mpf(vect1[j])*mpmath.mpf(vect2[j]))
+    return returnvect
+
+
+def my_mean(vect):
+    sum = mpmath.mpf(0)
+    for j in range(0,len(vect)):
+        sum = sum + mpmath.mpf(vect[j])
+    return mpmath.mpf(sum/mpmath.mpf(len(vect)))
 
 
 #running for several atributes

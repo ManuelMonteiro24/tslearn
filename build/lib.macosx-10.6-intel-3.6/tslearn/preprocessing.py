@@ -29,6 +29,7 @@ def z_normalize(dataset,variables_size):
 #running for several Attributes
 #resolves dependencies between variables!
 def multivariate_normalization(data,variables_size):
+    mpmath.mp.dps = 20
     for j in range(0,len(data[0])):
         means = []
         ts_s = []
@@ -52,15 +53,25 @@ def multivariate_normalization(data,variables_size):
 
         #numpy.cov faz arredondamentos para zero o que leva a matrix nao ser semidefinitava pos
         #covariance_matrix = numpy.cov(ts_s)
+        #covariance_matrix = mpmath.matrix(covariance_matrix)
+        print(ts_s)
         covariance_matrix = my_covariance_matrix(ts_s,variables_size)
-        #print("covariance_matrix:", covariance_matrix)
+        #temos esta covariance_matrix sempre semidifinitva positiva garantianos que o resto a funcionar bem mas para ser semidifinitva positivia
+        #teria que ter todos os w maior que zero
+        #para non zero vectores temos matrix covariance sempre simetrica e semidifinitva
+        print("covariance_matrix:", covariance_matrix)
+        #print(mpmath.dps)
+        #print("tipo",type(covariance_matrix[0,0]))
         #w eigenvalues
         #v eigenvectores
         w, v= mpmath.eig(covariance_matrix)
-        #print("w,v:",w,v)
+        #w, v= numpy.linalg.eig(covariance_matrix)
+        print(w)
         diagonal = mpmath.diag(w)
+        #diagonal = numpy.diag(w)
         #print("diagonal:",diagonal)
         result = mpmath.sqrtm(diagonal)
+        #result = numpy.sqrt(diagonal)
         #print("result(sqrt diagonal):", result)
         B = v*result
 
@@ -71,11 +82,19 @@ def multivariate_normalization(data,variables_size):
             # Not invertible. Skip this one.
             # Non invertable cases Uwave
             print("not invertible")
+            print("covariance_matrix:", covariance_matrix)
+            print("w,v:",w,v)
+            print("diagonal:",diagonal)
+            print("result(sqrt diagonal):", result)
             sys.exit()
         except Exception as exception:
             # Not invertible. Skip this one.
             # Non invertable cases Uwave
             print("not invertible")
+            print("covariance_matrix:", covariance_matrix)
+            print("w,v:",w,v)
+            print("diagonal:",diagonal)
+            print("result(sqrt diagonal):", result)
             sys.exit()
 
         for i in range(0,len(data[0][j])):
