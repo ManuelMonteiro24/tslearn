@@ -26,10 +26,16 @@ def my_variance(vect):
     vect_mean = my_mean(vect)
     for i in range(0,len(vect)):
         vect[i] = mpmath.mpf(vect[i] - vect_mean)
-    return mpmath.fsum(abs(vect)**2)/mpmath.mpf(len(vect))
+    return mpmath.fsum(vect**2)/mpmath.mpf(len(vect))
 
 def cov_funct(vect1,vect2):
-    return mpmath.mpf(my_mean(my_vector_multp(vect1,vect2)) - (my_mean(vect1)*my_mean(vect2)))
+    vect1_mean = my_mean(vect1)
+    vect2_mean = my_mean(vect2)
+    for i in range(0,len(vect1)):
+        vect1[i] = mpmath.mpf(vect1[i] - vect1_mean)
+        vect2[i] = mpmath.mpf(vect2[i] - vect2_mean)
+    return mpmath.fsum(my_vector_multp(vect1,vect2))/mpmath.mpf(len(vect1)-1)
+    #return mpmath.mpf(my_mean(my_vector_multp(vect1,vect2)) - (my_mean(vect1)*my_mean(vect2)))
 
 
 def my_vector_multp(vect1,vect2):

@@ -54,23 +54,28 @@ def multivariate_normalization(data,variables_size):
         #numpy.cov faz arredondamentos para zero o que leva a matrix nao ser semidefinitava pos
         #covariance_matrix = numpy.cov(ts_s)
         #covariance_matrix = mpmath.matrix(covariance_matrix)
-        print(ts_s)
+        #print(ts_s)
         covariance_matrix = my_covariance_matrix(ts_s,variables_size)
         #temos esta covariance_matrix sempre semidifinitva positiva garantianos que o resto a funcionar bem mas para ser semidifinitva positivia
         #teria que ter todos os w maior que zero
         #para non zero vectores temos matrix covariance sempre simetrica e semidifinitva
-        print("covariance_matrix:", covariance_matrix)
+        #print("covariance_matrix:", covariance_matrix)
         #print(mpmath.dps)
         #print("tipo",type(covariance_matrix[0,0]))
         #w eigenvalues
         #v eigenvectores
         w, v= mpmath.eig(covariance_matrix)
         #w, v= numpy.linalg.eig(covariance_matrix)
-        print(w)
         diagonal = mpmath.diag(w)
         #diagonal = numpy.diag(w)
         #print("diagonal:",diagonal)
-        result = mpmath.sqrtm(diagonal)
+        try:
+            result = mpmath.sqrtm(diagonal)
+        except ZeroDivisionError as error:
+            print("not invertible")
+            print("w",w)
+            sys.exit()
+
         #result = numpy.sqrt(diagonal)
         #print("result(sqrt diagonal):", result)
         B = v*result
@@ -78,6 +83,7 @@ def multivariate_normalization(data,variables_size):
         try:
             inverse_B = B**-1
             #print("inverse matrix: ", inverse_B)
+
         except ZeroDivisionError as error:
             # Not invertible. Skip this one.
             # Non invertable cases Uwave
