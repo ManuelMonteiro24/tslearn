@@ -102,4 +102,4 @@ if mode == "several_tests":
     for list_element in test_list:
         test_multivariate_methods(list_element[0],list_element[1],list_element[2],list_element[3],list_element[4],list_element[5],list_element[6])
 else:
-    test_multivariate_methods("uWave",3,315,"min_dist",150,2,None)
+    test_multivariate_methods("Libras",2,45,"min_dist",20,3,None)
