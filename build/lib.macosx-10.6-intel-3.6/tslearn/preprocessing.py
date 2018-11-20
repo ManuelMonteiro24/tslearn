@@ -29,12 +29,15 @@ def z_normalize(dataset,variables_size):
 #running for several Attributes
 #resolves dependencies between variables!
 def multivariate_normalization(data,variables_size):
+    #print("data_size: ", len(data) )
+    #sys.exit()
+
     mpmath.mp.dps = 20
     for j in range(0,len(data[0])):
         means = []
         ts_s = []
         for u in range(0,variables_size):
-            means.append(ts_mean_single_var(data[u][j]))
+            means.append(numpy.mean(data[u][j]))
             ts_s.append(data[u][j])
             #print("mean1: ",mean1)
             #print("mean2: ",mean2)
@@ -50,16 +53,18 @@ def multivariate_normalization(data,variables_size):
         #print("ts_with_several_variables:", ts_s)
         #print("variables_size:", len(ts_s))
         #print("ts_length:", len(ts_s[0]))
-
-        #numpy.cov faz arredondamentos para zero o que leva a matrix nao ser semidefinitava pos
-        #covariance_matrix = numpy.cov(ts_s)
-        #covariance_matrix = mpmath.matrix(covariance_matrix)
-        #print(ts_s)
-        covariance_matrix = my_covariance_matrix(ts_s,variables_size)
-        #temos esta covariance_matrix sempre semidifinitva positiva garantianos que o resto a funcionar bem mas para ser semidifinitva positivia
-        #teria que ter todos os w maior que zero
-        #para non zero vectores temos matrix covariance sempre simetrica e semidifinitva
-        #print("covariance_matrix:", covariance_matrix)
+        #print("ts in analysis:",ts_s)
+        #print("numpy_variance of 1_variable_vector (dividir por N): ",numpy.var(ts_s[0]))
+        #print("numpy_variance of 2_variable_vector: (dividir por N)",numpy.var(ts_s[1]))
+        #print("numpy_variance of 1_variable_vector: (dividir por N-1)",numpy.var(ts_s[0], ddof=1))
+        #print("numpy_variance of 2_variable_vector: (dividir por N-1)",numpy.var(ts_s[1], ddof=1))
+        #numpy_covariance_matrix = numpy.cov(ts_s)
+        #covariance_matrix = my_covariance_matrix(ts_s,variables_size)
+        covariance_matrix = mpmath.matrix(numpy.cov(ts_s))
+        #print("covariance_matrix (dividir por N-1,estava a usar esta na reuniao de 6f!):", numpy_covariance_matrix)
+        #print("covariance_matrix (dividir N):", covariance_matrix)
+        #sys.exit()
+            #print("covariance_matrix:", covariance_matrix)
         #print(mpmath.dps)
         #print("tipo",type(covariance_matrix[0,0]))
         #w eigenvalues
@@ -72,8 +77,10 @@ def multivariate_normalization(data,variables_size):
         try:
             result = mpmath.sqrtm(diagonal)
         except ZeroDivisionError as error:
+            print("j: ",j)
+            print("ts:",ts_s)
             print("not invertible")
-            print("w",w)
+            print("covariance_matrix:", covariance_matrix)
             sys.exit()
 
         #result = numpy.sqrt(diagonal)
@@ -87,20 +94,18 @@ def multivariate_normalization(data,variables_size):
         except ZeroDivisionError as error:
             # Not invertible. Skip this one.
             # Non invertable cases Uwave
+            print("j: ",j)
+            print("ts:",ts_s)
             print("not invertible")
             print("covariance_matrix:", covariance_matrix)
-            print("w,v:",w,v)
-            print("diagonal:",diagonal)
-            print("result(sqrt diagonal):", result)
             sys.exit()
         except Exception as exception:
             # Not invertible. Skip this one.
-            # Non invertable cases Uwave
+            # Non invertable cases Uwav
+            print("j: ",j)
+            print("ts:",ts_s)
             print("not invertible")
             print("covariance_matrix:", covariance_matrix)
-            print("w,v:",w,v)
-            print("diagonal:",diagonal)
-            print("result(sqrt diagonal):", result)
             sys.exit()
 
         for i in range(0,len(data[0][j])):

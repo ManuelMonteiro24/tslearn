@@ -95,7 +95,6 @@ def _breakpoints(n_bins, scale=1., variables_size = 1):
         return norm.ppf([float(a) / n_bins for a in range(1, n_bins)], scale=scale)
     else:
         radius = calculate_circles(variables_size)
-        print("vector de raiso: ", radius)
         return radius[n_bins]
 
 

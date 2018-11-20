@@ -34,7 +34,7 @@ def cov_funct(vect1,vect2):
     for i in range(0,len(vect1)):
         vect1[i] = mpmath.mpf(vect1[i] - vect1_mean)
         vect2[i] = mpmath.mpf(vect2[i] - vect2_mean)
-    return mpmath.fsum(my_vector_multp(vect1,vect2))/mpmath.mpf(len(vect1)-1)
+    return mpmath.fsum(my_vector_multp(vect1,vect2))/mpmath.mpf(len(vect1))
     #return mpmath.mpf(my_mean(my_vector_multp(vect1,vect2)) - (my_mean(vect1)*my_mean(vect2)))
 
 
