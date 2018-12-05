@@ -52,11 +52,14 @@ def extract_from_zip_url(url, target_dir=None, verbose=False):
         return None
 
 #running for several atributes
-def read_dataset_from_file(dataset_name, atributes, length_ts):
+def read_dataset_from_file(dataset_name):
     """file must be in the Directory the program is running"""
     dirname = os.path.abspath(os.path.dirname(sys.argv[0]))
     train_test_str = ["_TRAIN","_TEST"]
     return_vector = []
+    atributes_number = None
+    last_ts_class = None
+    ts_index_counter = None
     for i in range(0,2):
         file_location = dirname + "/" + dataset_name + train_test_str[i]
         ts_final = []
@@ -65,28 +68,41 @@ def read_dataset_from_file(dataset_name, atributes, length_ts):
         with open(file_location) as fin:
             for line in fin:
                 line = line.split()
-                if len(line) != atributes + 3:
+                if atributes_number == None:
+                    atributes_number = len(line) - 3
+                if ts_index_counter == None:
+                    ts_index_counter = int(line[0])
+                if len(line) < 4: #file not standarized
                     continue
-                elif int(line[1]) == 1:
+
+                elif int(line[0]) == ts_index_counter: #same series case
                     ts_atributes_helper = []
-                    for j in range(0,atributes):
+                    for j in range(0,atributes_number):
                         ts_atributes_helper.append(float(line[3+j]))
                     ts_values_helper.append(numpy.array(ts_atributes_helper))
-                    ts_class.append(int(line[2]))
-                elif int(line[1]) == length_ts:
-                    ts_atributes_helper = []
-                    for j in range(0,atributes):
-                        ts_atributes_helper.append(float(line[3+j]))
-                    ts_values_helper.append(numpy.array(numpy.array(ts_atributes_helper)))
+                    last_ts_class = int(line[2])
+
+                else: #first element of new ts case
+                    #write to file saved ts
                     ts_final.append(ts_values_helper)
                     ts_values_helper = []
-                else:
+                    ts_index_counter = int(line[0])
+                    ts_class.append(last_ts_class)
+                    #process new one
                     ts_atributes_helper = []
-                    for j in range(0,atributes):
+                    for j in range(0,atributes_number):
                         ts_atributes_helper.append(float(line[3+j]))
-                    ts_values_helper.append(numpy.array(ts_atributes_helper))
+                    ts_values_helper.append(numpy.array(numpy.array(ts_atributes_helper)))
+
+                    #last ts of file case
+            ts_final.append(ts_values_helper)
+            ts_values_helper = []
+            ts_class.append(last_ts_class)
+
+        ts_index_counter = None
         return_vector.append(ts_final)
         return_vector.append(ts_class)
+    return_vector.append(atributes_number)
     return return_vector
 
 class UCR_UEA_datasets(object):

@@ -16,6 +16,7 @@ tslearn/preprocessing.py
 tslearn/shapelets.py
 tslearn/soft_dtw_fast.pyx
 tslearn/svm.py
+tslearn/teste.py
 tslearn/utils.py
 tslearn.egg-info/PKG-INFO
 tslearn.egg-info/SOURCES.txt

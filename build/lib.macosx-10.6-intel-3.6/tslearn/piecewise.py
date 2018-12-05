@@ -14,17 +14,32 @@ from tslearn.cysax import cydist_sax, cyslopes, cydist_1d_sax, inv_transform_1d_
 
 __author__ = 'Romain Tavenard romain.tavenard[at]univ-rennes2.fr'
 
-#return circle radius value
-#working for 2,3,... variables
-def calculate_circles(variables_size):
-    return_vector = {}
+univar_breakpoints =  {'2': [0],'3' : [-0.43, 0.43],
+        '4' : [-0.67, 0, 0.67],
+        '5' : [-0.84, -0.25, 0.25, 0.84],
+        '6' : [-0.97, -0.43, 0, 0.43, 0.97],
+        '7' : [-1.07, -0.57, -0.18, 0.18, 0.57, 1.07],
+        '8' : [-1.15, -0.67, -0.32, 0, 0.32, 0.67, 1.15],
+        '9' : [-1.22, -0.76, -0.43, -0.14, 0.14, 0.43, 0.76, 1.22],
+        '10': [-1.28, -0.84, -0.52, -0.25, 0, 0.25, 0.52, 0.84, 1.28],
+        '11': [-1.34, -0.91, -0.6, -0.35, -0.11, 0.11, 0.35, 0.6, 0.91, 1.34],
+        '12': [-1.38, -0.97, -0.67, -0.43, -0.21, 0, 0.21, 0.43, 0.67, 0.97, 1.38],
+        '13': [-1.43, -1.02, -0.74, -0.5, -0.29, -0.1, 0.1, 0.29, 0.5, 0.74, 1.02, 1.43],
+        '14': [-1.47, -1.07, -0.79, -0.57, -0.37, -0.18, 0, 0.18, 0.37, 0.57, 0.79, 1.07, 1.47],
+        '15': [-1.5, -1.11, -0.84, -0.62, -0.43, -0.25, -0.08, 0.08, 0.25, 0.43, 0.62, 0.84, 1.11, 1.5],
+        '16': [-1.53, -1.15, -0.89, -0.67, -0.49, -0.32, -0.16, 0, 0.16, 0.32, 0.49, 0.67, 0.89, 1.15, 1.53],
+        '17': [-1.56, -1.19, -0.93, -0.72, -0.54, -0.38, -0.22, -0.07, 0.07, 0.22, 0.38, 0.54, 0.72, 0.93, 1.19, 1.56],
+        '18': [-1.59, -1.22, -0.97, -0.76, -0.59, -0.43, -0.28, -0.14, 0, 0.14, 0.28, 0.43, 0.59, 0.76, 0.97, 1.22, 1.59],
+        '19': [-1.62, -1.25, -1, -0.8, -0.63, -0.48, -0.34, -0.2, -0.07, 0.07, 0.2, 0.34, 0.48, 0.63, 0.8, 1, 1.25, 1.62],
+        '20': [-1.64, -1.28, -1.04, -0.84, -0.67, -0.52, -0.39, -0.25, -0.13, 0, 0.13, 0.25, 0.39, 0.52, 0.67, 0.84, 1.04, 1.28, 1.64]
+        }
 
-    for i in range(2,21):
-        help_vector = []
-        for j in range(1,i):
-            radius = erfinv((j*((2*math.pi)**(variables_size/2)/(i*(math.sqrt(2)**(variables_size))*(math.sqrt(math.pi)**(variables_size)))))**(1/variables_size)) * math.sqrt(2)
-            help_vector.append(radius)
-        return_vector[i] = help_vector
+def calculate_circles(variables_size,alphabet):
+    return_vector = []
+
+    for j in range(1,alphabet):
+        radius = erfinv((j*((2*math.pi)**(variables_size/2)/(alphabet*(math.sqrt(2)**(variables_size))*(math.sqrt(math.pi)**(variables_size)))))**(1/variables_size)) * math.sqrt(2)
+        return_vector.append(radius)
 
     return return_vector
 
@@ -40,7 +55,7 @@ def _paa_to_symbols(X_paa, breakpoints,variables_size = 1,multivariate_output = 
     if multivariate_output == True:
         return_vector = []
         for i in range(0,variables_size):
-            alphabet_size = breakpoints.shape[0] + 1
+            alphabet_size = len(breakpoints) + 1
             X_symbols = numpy.zeros(X_paa[i].shape, dtype=numpy.int) - 1
             for idx_bp, bp in enumerate(breakpoints):
                 indices = numpy.logical_and(X_symbols < 0, X_paa[i] < bp)
@@ -50,7 +65,7 @@ def _paa_to_symbols(X_paa, breakpoints,variables_size = 1,multivariate_output = 
         return return_vector
 
     if variables_size == 1:
-        alphabet_size = breakpoints.shape[0] + 1
+        alphabet_size = len(breakpoints) + 1
         X_symbols = numpy.zeros(X_paa.shape, dtype=numpy.int) - 1
         for idx_bp, bp in enumerate(breakpoints):
             indices = numpy.logical_and(X_symbols < 0, X_paa < bp)
@@ -59,11 +74,8 @@ def _paa_to_symbols(X_paa, breakpoints,variables_size = 1,multivariate_output = 
         return X_symbols
 
     else:
-        #print("breakpoints",breakpoints)
         X_symbols = []
         zero_vector=numpy.zeros(variables_size)
-        #print("llenn", len(X_paa[0][0]))
-        #for each element in TS
         for ts_index in range(0,len(X_paa[0])):
             help_vector = []
             for element_index in range(0,len(X_paa[0][0])):
@@ -71,9 +83,6 @@ def _paa_to_symbols(X_paa, breakpoints,variables_size = 1,multivariate_output = 
                 for variable_index in range (0,variables_size):
                     element_vector.append(X_paa[variable_index][ts_index][element_index])
                 euclid_dist = euclidean(element_vector,zero_vector)
-                #print("zero_vector",zero_vector)
-                #print("element_vector", element_vector)
-                #print("eucli",euclid_dist)
                 for breakpoints_index in range(0,len(breakpoints)):
                     if euclid_dist <= breakpoints[breakpoints_index]:
                         help_vector.append(breakpoints_index)
@@ -83,7 +92,7 @@ def _paa_to_symbols(X_paa, breakpoints,variables_size = 1,multivariate_output = 
             X_symbols.append(help_vector)
         return X_symbols
 
-def _breakpoints(n_bins, scale=1., variables_size = 1):
+def _breakpoints(alphabet_size, variables_size = 1):
     """Compute breakpoints for a given number of SAX symbols and a given Gaussian scale.
 
     Example
@@ -92,23 +101,9 @@ def _breakpoints(n_bins, scale=1., variables_size = 1):
     array([ 0.])
     """
     if variables_size == 1:
-        return norm.ppf([float(a) / n_bins for a in range(1, n_bins)], scale=scale)
+        return norm.ppf([float(a) / alphabet_size for a in range(1, alphabet_size)], scale=1)
     else:
-        radius = calculate_circles(variables_size)
-        return radius[n_bins]
-
-
-#DIDNT change this because dont know its implication
-def _bin_medians(n_bins, scale=1., variables_size = 1):
-    """Compute median value corresponding to SAX symbols for a given Gaussian scale.
-
-    Example
-    -------
-    >>> _bin_medians(n_bins=2)
-    array([-0.67448975,  0.67448975])
-    """
-
-    return norm.ppf([float(a) / (2 * n_bins) for a in range(1, 2 * n_bins, 2)], scale=scale)
+        return calculate_circles(variables_size,alphabet_size)
 
 
 class PiecewiseAggregateApproximation(TransformerMixin):
@@ -316,82 +311,13 @@ class PiecewiseAggregateApproximation(TransformerMixin):
         return inv_transform_paa(X_, original_size=self.size_fitted_)
 
 class SymbolicAggregateApproximation(PiecewiseAggregateApproximation):
-    """Symbolic Aggregate approXimation (SAX) transformation.
 
-    SAX was originally presented in [1]_.
+    def __init__(self, n_segments, alphabet_size,variables_size = 1,multivariate_output = None):
 
-    Parameters
-    ----------
-    n_segments : int
-        Number of PAA segments to compute
-    alphabet_size_avg : int
-        Number of SAX symbols to use
-
-    Attributes
-    ----------
-    breakpoints_avg_ : numpy.ndarray of shape (alphabet_size - 1, )
-        List of breakpoints used to generate SAX symbols
-
-    Note
-    ----
-        This method requires a dataset of equal-sized time series.
-
-    Example
-    -------
-    >>> sax = SymbolicAggregateApproximation(n_segments=3, alphabet_size_avg=2)
-    >>> data = [[-1., 2., 0.1, -1., 1., -1.], [1., 3.2, -1., -3., 1., -1.]]
-    >>> sax_data = sax.fit_transform(data)
-    >>> sax_data.shape
-    (2, 3, 1)
-    >>> sax_data
-    array([[[1],
-            [0],
-            [1]],
-    <BLANKLINE>
-           [[1],
-            [0],
-            [1]]])
-    >>> numpy.alltrue(sax_data == sax.fit(data).transform(data))
-    True
-    >>> sax.distance_sax(sax_data[0], sax_data[1])  # doctest: +ELLIPSIS
-    0.0
-    >>> sax.distance(data[0], data[1])  # doctest: +ELLIPSIS
-    0.0
-    >>> sax.inverse_transform(sax_data)
-    array([[[ 0.67448975],
-            [ 0.67448975],
-            [-0.67448975],
-            [-0.67448975],
-            [ 0.67448975],
-            [ 0.67448975]],
-    <BLANKLINE>
-           [[ 0.67448975],
-            [ 0.67448975],
-            [-0.67448975],
-            [-0.67448975],
-            [ 0.67448975],
-            [ 0.67448975]]])
-    >>> unfitted_sax = SymbolicAggregateApproximation(n_segments=3, alphabet_size_avg=2)
-    >>> unfitted_sax.distance(data[0], data[1])  # doctest: +IGNORE_EXCEPTION_DETAIL
-    Traceback (most recent call last):
-    ValueError: Model not fitted yet: cannot be used for distance computation.
-
-    References
-    ----------
-    .. [1] J. Lin, E. Keogh, L. Wei, et al. Experiencing SAX: a novel symbolic representation of time series.
-       Data Mining and Knowledge Discovery, 2007. vol. 15(107)
-    """
-    def __init__(self, n_segments, alphabet_size_avg,variables_size = 1,multivariate_output = None):
         PiecewiseAggregateApproximation.__init__(self, n_segments)
-        self.alphabet_size_avg = alphabet_size_avg
-
+        self.alphabet_size = alphabet_size
         self.multivariate_output = multivariate_output
-
-        if multivariate_output == True:
-            self.breakpoints_avg_ = _breakpoints(self.alphabet_size_avg,1.)
-        else:
-            self.breakpoints_avg_ = _breakpoints(self.alphabet_size_avg,1.,variables_size)
-        self.breakpoints_avg_middle_ = _bin_medians(self.alphabet_size_avg)
+        self.breakpoints = _breakpoints(self.alphabet_size,variables_size)
         self.variables_size = variables_size
 
     def fit(self, X, y=None):
@@ -429,7 +355,7 @@ class SymbolicAggregateApproximation(PiecewiseAggregateApproximation):
 
     def _transform(self, X, y=None):
         X_paa = PiecewiseAggregateApproximation._transform(self, X, None, self.variables_size)
-        return _paa_to_symbols(X_paa, self.breakpoints_avg_,self.variables_size,self.multivariate_output)
+        return _paa_to_symbols(X_paa, self.breakpoints,self.variables_size,self.multivariate_output)
 
     def transform(self, X, y=None):
         """Transform a dataset of time series into its SAX representation.
@@ -470,7 +396,7 @@ class SymbolicAggregateApproximation(PiecewiseAggregateApproximation):
         if self.size_fitted_ < 0:
             raise ValueError("Model not fitted yet: cannot be used for distance computation.")
         else:
-            return cydist_sax(sax1, sax2, self.breakpoints_avg_, self.size_fitted_)
+            return cydist_sax(sax1, sax2, self.breakpoints, self.size_fitted_)
 
     def distance(self, ts1, ts2):
         """Compute distance between SAX representations as defined in [1]_.
@@ -494,23 +420,6 @@ class SymbolicAggregateApproximation(PiecewiseAggregateApproximation):
         """
         sax = self.transform([ts1, ts2])
         return self.distance_sax(sax[0], sax[1])
-
-    def inverse_transform(self, X):
-        """Compute time series corresponding to given SAX representations.
-
-        Parameters
-        ----------
-        X : array-like of shape (n_ts, sz_sax, d)
-            A dataset of SAX series.
-
-        Returns
-        -------
-        numpy.ndarray of shape (n_ts, sz_original_ts, d)
-            A dataset of time series corresponding to the provided representation.
-        """
-        X_ = numpy.array(X, dtype=numpy.int)
-        return inv_transform_sax(X_, breakpoints_middle_=self.breakpoints_avg_middle_, original_size=self.size_fitted_)
-
 
 class OneD_SymbolicAggregateApproximation(SymbolicAggregateApproximation):
     """One-D Symbolic Aggregate approXimation (1d-SAX) transformation.

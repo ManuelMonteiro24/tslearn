@@ -6,6 +6,8 @@ from scipy.spatial.distance import pdist
 from sklearn.utils import check_random_state
 from tslearn.soft_dtw_fast import _soft_dtw, _soft_dtw_grad, _jacobian_product_sq_euc
 from sklearn.metrics.pairwise import euclidean_distances
+from tslearn.piecewise import calculate_circles
+from scipy.stats import norm
 
 from tslearn.cydtw import dtw as cydtw, dtw_path as cydtw_path, cdist_dtw as cycdist_dtw, dtw_subsequence_path as cydtw_subsequence_path
 from tslearn.cydtw import lb_envelope as cylb_envelope
@@ -16,35 +18,12 @@ from tslearn.utils import to_time_series, to_time_series_dataset, ts_size, check
 
 __author__ = 'Romain Tavenard romain.tavenard[at]univ-rennes2.fr'
 
-min_dist_breakpoints = {'2': [0],
-                            '3' : [-0.43, 0.43],
-                            '4' : [-0.67, 0, 0.67],
-                            '5' : [-0.84, -0.25, 0.25, 0.84],
-                            '6' : [-0.97, -0.43, 0, 0.43, 0.97],
-                            '7' : [-1.07, -0.57, -0.18, 0.18, 0.57, 1.07],
-                            '8' : [-1.15, -0.67, -0.32, 0, 0.32, 0.67, 1.15],
-                            '9' : [-1.22, -0.76, -0.43, -0.14, 0.14, 0.43, 0.76, 1.22],
-                            '10': [-1.28, -0.84, -0.52, -0.25, 0, 0.25, 0.52, 0.84, 1.28],
-                            '11': [-1.34, -0.91, -0.6, -0.35, -0.11, 0.11, 0.35, 0.6, 0.91, 1.34],
-                            '12': [-1.38, -0.97, -0.67, -0.43, -0.21, 0, 0.21, 0.43, 0.67, 0.97, 1.38],
-                            '13': [-1.43, -1.02, -0.74, -0.5, -0.29, -0.1, 0.1, 0.29, 0.5, 0.74, 1.02, 1.43],
-                            '14': [-1.47, -1.07, -0.79, -0.57, -0.37, -0.18, 0, 0.18, 0.37, 0.57, 0.79, 1.07, 1.47],
-                            '15': [-1.5, -1.11, -0.84, -0.62, -0.43, -0.25, -0.08, 0.08, 0.25, 0.43, 0.62, 0.84, 1.11, 1.5],
-                            '16': [-1.53, -1.15, -0.89, -0.67, -0.49, -0.32, -0.16, 0, 0.16, 0.32, 0.49, 0.67, 0.89, 1.15, 1.53],
-                            '17': [-1.56, -1.19, -0.93, -0.72, -0.54, -0.38, -0.22, -0.07, 0.07, 0.22, 0.38, 0.54, 0.72, 0.93, 1.19, 1.56],
-                            '18': [-1.59, -1.22, -0.97, -0.76, -0.59, -0.43, -0.28, -0.14, 0, 0.14, 0.28, 0.43, 0.59, 0.76, 0.97, 1.22, 1.59],
-                            '19': [-1.62, -1.25, -1, -0.8, -0.63, -0.48, -0.34, -0.2, -0.07, 0.07, 0.2, 0.34, 0.48, 0.63, 0.8, 1, 1.25, 1.62],
-                            '20': [-1.64, -1.28, -1.04, -0.84, -0.67, -0.52, -0.39, -0.25, -0.13, 0, 0.13, 0.25, 0.39, 0.52, 0.67, 0.84, 1.04, 1.28, 1.64]
-                            }
-
-#working for several atributes
 def dtw_between_multivariate_ts(ts1,ts2):
     total_dist = 0
     for i in range(0,len(ts1)):
         total_dist = total_dist + dtw(ts1[i], ts2[i])
     return total_dist
 
-#working for several atributes
 def dtw_multivar_matrix(s1,s2):
     dist_table=numpy.zeros((len(s1[0]),len(s2[0])))
     for i in range(0,len(s1[0])):
@@ -57,7 +36,6 @@ def dtw_multivar_matrix(s1,s2):
             dist_table[i,j]= dtw_between_multivariate_ts(help_1, help_2)
     return dist_table
 
-#working for several atributes
 def euclidean_between_ts(ts1,ts2):
     total_dist = 0
     for i in range(0,len(ts1)):
@@ -69,7 +47,6 @@ def euclidean_between_ts(ts1,ts2):
         total_dist = total_dist + soma
     return total_dist**(1/2)
 
-#working for several atributes
 def euclidean_multivar_matrix(s1, s2):
     dist_table=numpy.zeros((len(s1[0]),len(s2[0])))
     for i in range(0,len(s1[0])):
@@ -82,25 +59,15 @@ def euclidean_multivar_matrix(s1, s2):
             dist_table[i,j]= euclidean_between_ts(help_1,help_2)
     return dist_table
 
-#def build_dist_table(alphabet_size):
-#    breakpoints = min_dist_breakpoints[str(alphabet_size)]
-#    min_dist_table=numpy.zeros((alphabet_size,alphabet_size))
-#    for i in range(0, alphabet_size):
-        # the min_dist for adjacent symbols are 0, so we start with i+2
-#        for j in range(i+2, alphabet_size):
-            # square the distance now for future use
-#            min_dist_table[i,j]=(breakpoints[i-1]-breakpoints[j-2])**2
-            # the distance matrix is symmetric
-#            min_dist_table[j,i] = min_dist_table[i,j]
-def min_dist_matrix(s1, s2, alphabet_size, variables_size = 1,multivariate_output=None,compression_ratio = 1):
+def min_dist_matrix(s1, s2, alphabet_size, variables_size = 1,multivariate_output=None,compression_ratio = 1,variables_original_ts = None):
+    MINDIST_table = build_dist_table(alphabet_size,variables_original_ts,multivariate_output)
     if multivariate_output == None:
-        #print("lens s1 s2", len(s1), len(s2))
         dist_table=numpy.zeros((len(s1),len(s2)))
         len1 = len(s1)
         len2 = len(s2)
         for i in range(0,len1):
             for j in range(0,len2):
-                dist_table[i,j] = min_dist(s1[i],s2[j],alphabet_size)
+                dist_table[i,j] = min_dist(s1[i],s2[j],alphabet_size,MINDIST_table,variables_size)
     else:
         dist_table=numpy.zeros((len(s1[0]),len(s2[0])))
         len1 = len(s1[0])
@@ -110,42 +77,37 @@ def min_dist_matrix(s1, s2, alphabet_size, variables_size = 1,multivariate_outpu
             for j in range(0,len2):
                 sum = 0
                 for u in range(0,variables_size):
-                    sum = sum + min_dist(s1[u][i],s2[u][j],alphabet_size)
+                    sum = sum + min_dist(s1[u][i],s2[u][j],alphabet_size,MINDIST_table,variables_size)
                 dist_table[i,j]= sum
     return dist_table
 
-def min_dist(s1, s2, alphabet_size, compression_ratio = 1):
-    if (len(s1) != len(s2)):
-        print('error: the strings must have equal length!')
-        return None
+def build_dist_table(alphabet_size,variables_size,multivariate_output):
+    if variables_size ==1 or multivariate_output:
+        breakpoints = norm.ppf([float(a) / alphabet_size for a in range(1, alphabet_size)], scale=1)
+    else:
+        breakpoints = calculate_circles(variables_size,alphabet_size)
 
-    #if (any(symbol1 > alphabet_size for symbol1 in s1) or any(symbol2 > alphabet_size for symbol2 in s2)):
-    #    print('error: some symbol(s) in the string(s) exceed(s) the alphabet size!')
-    #    return None
-
-    #build_dist_table(alphabet_size)
-    breakpoints = min_dist_breakpoints[str(alphabet_size)]
     min_dist_table=numpy.zeros((alphabet_size,alphabet_size))
     for i in range(0, alphabet_size):
         # the min_dist for adjacent symbols are 0, so we start with i+2
         for j in range(i+2, alphabet_size):
-            # square the distance now for future use
             min_dist_table[i,j]=(breakpoints[i]-breakpoints[j-1])**2
-            # the distance matrix is symmetric
             min_dist_table[j,i] = min_dist_table[i,j]
 
+    return min_dist_table
+
+
+def min_dist(s1, s2, alphabet_size,MINDIST_table,variablesize,compression_ratio = 1):
+    if (len(s1) != len(s2)):
+        print('error: the strings must have equal length!')
+        return None
+
     dist = 0
-    #print("s1 ", s1)
-    #print("s2 ", s2)
     for x,y in zip(numpy.nditer(s1), numpy.nditer(s2)):
         index_x = x.astype(numpy.int64)
-        #print("x ", index_x)
         index_y = y.astype(numpy.int64)
-        #print("y ", index_y)
-        #print("table return ",  min_dist_table[index_x, index_y])
-        dist = min_dist_table[index_x, index_y] + dist
+        dist = MINDIST_table[index_x, index_y] + dist
 
-    #print("dist squared ", numpy.sqrt(compression_ratio*dist))
     return numpy.sqrt(compression_ratio*dist)
 
 def dtw_path(s1, s2, global_constraint=None, sakoe_chiba_radius=1):

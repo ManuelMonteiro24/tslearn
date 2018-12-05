@@ -29,9 +29,6 @@ def z_normalize(dataset,variables_size):
 #running for several Attributes
 #resolves dependencies between variables!
 def multivariate_normalization(data,variables_size):
-    #print("data_size: ", len(data) )
-    #sys.exit()
-
     mpmath.mp.dps = 20
     for j in range(0,len(data[0])):
         means = []
@@ -39,58 +36,22 @@ def multivariate_normalization(data,variables_size):
         for u in range(0,variables_size):
             means.append(numpy.mean(data[u][j]))
             ts_s.append(data[u][j])
-            #print("mean1: ",mean1)
-            #print("mean2: ",mean2)
-
-            #not needed after all??
-            #std_var1 = numpy.std(ts1)
-            #std_var2 = numpy.std(ts2)
-            #print("stdvar: ",std_var1)
-            #print("stdvar: ",std_var2)
-            #print("ts1: ", ts1)
-            #print("ts2: ", ts2)
-
-        #print("ts_with_several_variables:", ts_s)
-        #print("variables_size:", len(ts_s))
-        #print("ts_length:", len(ts_s[0]))
-        #print("ts in analysis:",ts_s)
-        #print("numpy_variance of 1_variable_vector (dividir por N): ",numpy.var(ts_s[0]))
-        #print("numpy_variance of 2_variable_vector: (dividir por N)",numpy.var(ts_s[1]))
-        #print("numpy_variance of 1_variable_vector: (dividir por N-1)",numpy.var(ts_s[0], ddof=1))
-        #print("numpy_variance of 2_variable_vector: (dividir por N-1)",numpy.var(ts_s[1], ddof=1))
-        #numpy_covariance_matrix = numpy.cov(ts_s)
-        #covariance_matrix = my_covariance_matrix(ts_s,variables_size)
         covariance_matrix = mpmath.matrix(numpy.cov(ts_s))
-        #print("covariance_matrix (dividir por N-1,estava a usar esta na reuniao de 6f!):", numpy_covariance_matrix)
-        #print("covariance_matrix (dividir N):", covariance_matrix)
-        #sys.exit()
-            #print("covariance_matrix:", covariance_matrix)
-        #print(mpmath.dps)
-        #print("tipo",type(covariance_matrix[0,0]))
-        #w eigenvalues
-        #v eigenvectores
         w, v= mpmath.eig(covariance_matrix)
-        #w, v= numpy.linalg.eig(covariance_matrix)
         diagonal = mpmath.diag(w)
-        #diagonal = numpy.diag(w)
-        #print("diagonal:",diagonal)
+
         try:
             result = mpmath.sqrtm(diagonal)
         except ZeroDivisionError as error:
             print("j: ",j)
             print("ts:",ts_s)
-            print("not invertible")
+            print("not invertible sqrtm")
             print("covariance_matrix:", covariance_matrix)
             sys.exit()
 
-        #result = numpy.sqrt(diagonal)
-        #print("result(sqrt diagonal):", result)
         B = v*result
-
         try:
             inverse_B = B**-1
-            #print("inverse matrix: ", inverse_B)
-
         except ZeroDivisionError as error:
             # Not invertible. Skip this one.
             # Non invertable cases Uwave
@@ -101,13 +62,11 @@ def multivariate_normalization(data,variables_size):
             sys.exit()
         except Exception as exception:
             # Not invertible. Skip this one.
-            # Non invertable cases Uwav
             print("j: ",j)
             print("ts:",ts_s)
             print("not invertible")
             print("covariance_matrix:", covariance_matrix)
             sys.exit()
-
         for i in range(0,len(data[0][j])):
             atributes_together = []
             for u in range(0,variables_size):
@@ -116,7 +75,6 @@ def multivariate_normalization(data,variables_size):
             result = atributes_together - mpmath.matrix(means)
             result = inverse_B * result
             for u in range(0,variables_size):
-                #print("result[u]", result[u])
                 if type(result[u]) is mpmath.mpc:
                     data[u][j][i] = result[u].real
                 else:
