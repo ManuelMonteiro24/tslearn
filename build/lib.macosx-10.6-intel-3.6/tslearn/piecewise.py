@@ -74,23 +74,53 @@ def _paa_to_symbols(X_paa, breakpoints,variables_size = 1,multivariate_output = 
         return X_symbols
 
     else:
-        X_symbols = []
-        zero_vector=numpy.zeros(variables_size)
-        for ts_index in range(0,len(X_paa[0])):
-            help_vector = []
-            for element_index in range(0,len(X_paa[0][0])):
-                element_vector = []
-                for variable_index in range (0,variables_size):
-                    element_vector.append(X_paa[variable_index][ts_index][element_index])
-                euclid_dist = euclidean(element_vector,zero_vector)
-                for breakpoints_index in range(0,len(breakpoints)):
-                    if euclid_dist <= breakpoints[breakpoints_index]:
-                        help_vector.append(breakpoints_index)
-                        break
-                    if breakpoints_index == (len(breakpoints)-1):
-                        help_vector.append(breakpoints_index+1)
-            X_symbols.append(help_vector)
-        return X_symbols
+        mode = "malha multivariada"
+        if mode == "metodo circulos":
+            X_symbols = []
+            zero_vector=numpy.zeros(variables_size)
+            for ts_index in range(0,len(X_paa[0])):
+                help_vector = []
+                for element_index in range(0,len(X_paa[0][0])):
+                    element_vector = []
+                    for variable_index in range (0,variables_size):
+                        element_vector.append(X_paa[variable_index][ts_index][element_index])
+                    euclid_dist = euclidean(element_vector,zero_vector)
+                    for breakpoints_index in range(0,len(breakpoints)):
+                        if euclid_dist <= breakpoints[breakpoints_index]:
+                            help_vector.append(breakpoints_index)
+                            break
+                        if breakpoints_index == (len(breakpoints)-1):
+                            help_vector.append(breakpoints_index+1)
+                X_symbols.append(help_vector)
+                return X_symbols
+        else:
+            return_vector = []
+            for i in range(0,variables_size):
+                alphabet_size = len(breakpoints) + 1
+                X_symbols = numpy.zeros(X_paa[i].shape, dtype=numpy.int) - 1
+                for idx_bp, bp in enumerate(breakpoints):
+                    indices = numpy.logical_and(X_symbols < 0, X_paa[i] < bp)
+                    X_symbols[indices] = idx_bp
+                X_symbols[X_symbols < 0] = alphabet_size - 1
+                return_vector.append(X_symbols)
+
+            new_return_vector = []
+            for i in range(0,len(return_vector[0])):
+                help_vector = []
+                for j in range(0,len(return_vector[0][0])):
+                    symbol_concat_str = ""
+                    for w in range(0,len(return_vector)):
+                        symbol_concat_str += str(return_vector[w][i][j][0])
+                    help_vector.append(symbol_concat_str)
+                new_return_vector.append(help_vector)
+
+            #print("len_new_return_vector", len(new_return_vector))
+            #print("len_new_return_vector[0]", len(new_return_vector[0]))
+            #print("len_new_return_vector[0][0]", len(new_return_vector[0][0]))
+            #print(new_return_vector)
+            #sys.exit()
+            return new_return_vector
+
 
 def _breakpoints(alphabet_size, variables_size = 1):
     """Compute breakpoints for a given number of SAX symbols and a given Gaussian scale.
@@ -100,10 +130,10 @@ def _breakpoints(alphabet_size, variables_size = 1):
     >>> _breakpoints(n_bins=2)
     array([ 0.])
     """
-    if variables_size == 1:
-        return norm.ppf([float(a) / alphabet_size for a in range(1, alphabet_size)], scale=1)
-    else:
-        return calculate_circles(variables_size,alphabet_size)
+    #if variables_size == 1:
+    return norm.ppf([float(a) / alphabet_size for a in range(1, alphabet_size)], scale=1)
+    #else:
+        #return calculate_circles(variables_size,alphabet_size)
 
 
 class PiecewiseAggregateApproximation(TransformerMixin):

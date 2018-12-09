@@ -82,10 +82,10 @@ def min_dist_matrix(s1, s2, alphabet_size, variables_size = 1,multivariate_outpu
     return dist_table
 
 def build_dist_table(alphabet_size,variables_size,multivariate_output):
-    if variables_size ==1 or multivariate_output:
-        breakpoints = norm.ppf([float(a) / alphabet_size for a in range(1, alphabet_size)], scale=1)
-    else:
-        breakpoints = calculate_circles(variables_size,alphabet_size)
+    #if variables_size ==1 or multivariate_output:
+    breakpoints = norm.ppf([float(a) / alphabet_size for a in range(1, alphabet_size)], scale=1)
+    #else:
+    #breakpoints = calculate_circles(variables_size,alphabet_size)
 
     min_dist_table=numpy.zeros((alphabet_size,alphabet_size))
     for i in range(0, alphabet_size):
