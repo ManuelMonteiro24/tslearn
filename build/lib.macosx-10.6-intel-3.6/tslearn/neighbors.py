@@ -16,7 +16,7 @@ from tslearn.utils import to_time_series_dataset
 class KNeighborsTimeSeriesMixin(KNeighborsMixin):
     """Mixin for k-neighbors searches on Time Series."""
 
-    def kneighbors(self, X=None,variables_size=1, multivariate_output=None, n_neighbors=None, return_distance=True, variables_original_ts = None):
+    def kneighbors(self, X=None, multivariate_output=None, n_neighbors=None, return_distance=True):
         """Finds the K-neighbors of a point.
 
         Returns indices of and distances to the neighbors of each point.
@@ -47,15 +47,16 @@ class KNeighborsTimeSeriesMixin(KNeighborsMixin):
             X = self._fit_X
             self_neighbors = True
         else:
-            X = to_time_series_dataset(X,variables_size)
+            if not self.metric == "min_dist" and self.variables_size > 1:
+                X = to_time_series_dataset(X,self.variables_size)
 
-        if self.metric == "dtw" and variables_size ==1:
+        if self.metric == "dtw" and self.variables_size ==1:
             cdist_fun = cdist_dtw
-        elif self.metric == "dtw" and variables_size !=1:
+        elif self.metric == "dtw" and self.variables_size !=1:
             cdist_fun = dtw_multivar_matrix
         elif self.metric == "min_dist":
             cdist_fun = min_dist_matrix
-        elif self.metric == "euclidean" and variables_size !=1:
+        elif self.metric == "euclidean" and self.variables_size !=1:
             cdist_fun = euclidean_multivar_matrix
         elif self.metric in ["euclidean", "sqeuclidean", "cityblock"]:
             cdist_fun = lambda X, Xp: scipy_cdist(X.reshape((X.shape[0], -1)),
@@ -67,7 +68,7 @@ class KNeighborsTimeSeriesMixin(KNeighborsMixin):
 
         if self.metric == "min_dist":
 
-            full_dist_matrix = cdist_fun(X, self._fit_X, self.metric_params, variables_size, multivariate_output, 1,variables_original_ts)
+            full_dist_matrix = cdist_fun(X, self._fit_X, self.metric_params, self.variables_size, multivariate_output)
             #print("full dist matrix ", full_dist_matrix)
             #print("len:", len(full_dist_matrix))
         else:
@@ -82,8 +83,10 @@ class KNeighborsTimeSeriesMixin(KNeighborsMixin):
             n_neighbors = full_dist_matrix.shape[1]
         ind = ind[:, :n_neighbors]
 
-        if variables_size ==1:
+        if self.variables_size ==1:
             n_ts = X.shape[0]
+        elif self.metric == "min_dist" and multivariate_output==None:
+            n_ts =len(X)
         else:
             n_ts = X[0].shape[0]
         sample_range = numpy.arange(n_ts)[:, None]
@@ -193,13 +196,12 @@ class KNeighborsTimeSeriesClassifier(KNeighborsClassifier, KNeighborsTimeSeriesM
     >>> clf.predict([1, 2.2, 3.5])
     array([0])
     """
-    def __init__(self, n_neighbors=1, weights='uniform', metric="dtw", metric_params=None, variables_size=1, multivariate_output=None,variables_original_ts = None ):
+    def __init__(self, n_neighbors=1, weights='uniform', metric="dtw", metric_params=None, variables_size=1, multivariate_output=None):
         KNeighborsClassifier.__init__(self, n_neighbors=n_neighbors, weights=weights, algorithm='brute')
         self.metric = metric
         self.metric_params = metric_params
         self.variables_size = variables_size
         self.multivariate_output = multivariate_output
-        self.variables_original_ts = variables_original_ts
 
     def fit(self, X, y):
         """Fit the model using X as training data and y as target values
@@ -211,7 +213,10 @@ class KNeighborsTimeSeriesClassifier(KNeighborsClassifier, KNeighborsTimeSeriesM
         y : array-like, shape (n_ts, )
             Target values.
         """
-        self._fit_X = to_time_series_dataset(X,self.variables_size)
+        if self.metric == "min_dist" and self.variables_size > 1:
+            self._fit_X = X
+        else:
+            self._fit_X = to_time_series_dataset(X,self.variables_size)
         self._fit_y = numpy.array(y)
 
     def predict(self, X):
@@ -222,8 +227,12 @@ class KNeighborsTimeSeriesClassifier(KNeighborsClassifier, KNeighborsTimeSeriesM
         X : array-like, shape (n_ts, sz, d)
             Test samples.
         """
-        X_ = to_time_series_dataset(X,self.variables_size)
-        neigh_dist, neigh_ind = self.kneighbors(X_,self.variables_size,self.multivariate_output,None,True,self.variables_original_ts)
+        if self.metric == "min_dist" and self.variables_size > 1:
+            X_ = X
+        else:
+            X_ = to_time_series_dataset(X,self.variables_size)
+
+        neigh_dist, neigh_ind = self.kneighbors(X_,self.multivariate_output,None,True)
 
         weights = _get_weights(neigh_dist, self.weights)
 

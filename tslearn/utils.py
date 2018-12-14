@@ -7,6 +7,9 @@ from decimal import *
 
 __author__ = 'Romain Tavenard romain.tavenard[at]univ-rennes2.fr'
 
+def multivar_final_symbolic_repre(dataset):
+    return
+
 
 def my_covariance_matrix(data,variables_size):
     cov_matrix = mpmath.matrix(variables_size)

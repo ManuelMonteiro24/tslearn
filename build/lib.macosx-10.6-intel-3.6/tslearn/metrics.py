@@ -1,7 +1,7 @@
 """
 The :mod:`tslearn.metrics` module gathers time series similarity metrics.
 """
-import numpy
+import numpy, sys
 from scipy.spatial.distance import pdist
 from sklearn.utils import check_random_state
 from tslearn.soft_dtw_fast import _soft_dtw, _soft_dtw_grad, _jacobian_product_sq_euc
@@ -59,33 +59,50 @@ def euclidean_multivar_matrix(s1, s2):
             dist_table[i,j]= euclidean_between_ts(help_1,help_2)
     return dist_table
 
-def min_dist_matrix(s1, s2, alphabet_size, variables_size = 1,multivariate_output=None,compression_ratio = 1,variables_original_ts = None):
-    MINDIST_table = build_dist_table(alphabet_size,variables_original_ts,multivariate_output)
+def min_dist_matrix(s1, s2, alphabet_size, variables_size = 1,multivariate_output=None,compression_ratio = 1):
+    MINDIST_table = build_dist_table(alphabet_size)
     if multivariate_output == None:
         dist_table=numpy.zeros((len(s1),len(s2)))
-        len1 = len(s1)
-        len2 = len(s2)
-        for i in range(0,len1):
-            for j in range(0,len2):
-                dist_table[i,j] = min_dist(s1[i],s2[j],alphabet_size,MINDIST_table,variables_size)
+
+        #print("s1", s1)
+        #print("s2", s2)
+        #print("len(s1)", len(s1))
+        #print("len(s2)", len(s2))
+        for i in range(0,len(s1)):
+            for j in range(0,len(s2)):
+                dist_table[i,j] = min_dist(s1[i],s2[j],alphabet_size,MINDIST_table,variables_size,multivariate_output)
     else:
         dist_table=numpy.zeros((len(s1[0]),len(s2[0])))
-        len1 = len(s1[0])
-        len2 = len(s2[0])
 
-        for i in range(0,len1):
-            for j in range(0,len2):
+        for i in range(0,len(s1[0])):
+            for j in range(0,len(s2[0])):
                 sum = 0
                 for u in range(0,variables_size):
-                    sum = sum + min_dist(s1[u][i],s2[u][j],alphabet_size,MINDIST_table,variables_size)
+                    sum = sum + min_dist(s1[u][i],s2[u][j],alphabet_size,MINDIST_table,variables_size,multivariate_output)
                 dist_table[i,j]= sum
     return dist_table
 
-def build_dist_table(alphabet_size,variables_size,multivariate_output):
-    #if variables_size ==1 or multivariate_output:
+
+def min_dist(s1, s2, alphabet_size,MINDIST_table,variablesize,multivariate_output,compression_ratio = 1):
+    if (len(s1) != len(s2)):
+        print('error: the ts must have equal length!')
+        return None
+
+    dist = 0
+    if variablesize >1 and multivariate_output== None:
+        for i in range(0,len(s1)):
+            dist_variables = 0
+            for j in range(0,variablesize):
+                dist_variables = MINDIST_table[int(s1[i][j]), int(s2[i][j])] + dist_variables
+            dist = dist_variables + dist
+    else:
+        for x,y in zip(numpy.nditer(s1), numpy.nditer(s2)):
+            dist = MINDIST_table[x.astype(numpy.int64), y.astype(numpy.int64)] + dist
+
+    return numpy.sqrt(compression_ratio*dist)
+
+def build_dist_table(alphabet_size):
     breakpoints = norm.ppf([float(a) / alphabet_size for a in range(1, alphabet_size)], scale=1)
-    #else:
-    #breakpoints = calculate_circles(variables_size,alphabet_size)
 
     min_dist_table=numpy.zeros((alphabet_size,alphabet_size))
     for i in range(0, alphabet_size):
@@ -95,20 +112,6 @@ def build_dist_table(alphabet_size,variables_size,multivariate_output):
             min_dist_table[j,i] = min_dist_table[i,j]
 
     return min_dist_table
-
-
-def min_dist(s1, s2, alphabet_size,MINDIST_table,variablesize,compression_ratio = 1):
-    if (len(s1) != len(s2)):
-        print('error: the strings must have equal length!')
-        return None
-
-    dist = 0
-    for x,y in zip(numpy.nditer(s1), numpy.nditer(s2)):
-        index_x = x.astype(numpy.int64)
-        index_y = y.astype(numpy.int64)
-        dist = MINDIST_table[index_x, index_y] + dist
-
-    return numpy.sqrt(compression_ratio*dist)
 
 def dtw_path(s1, s2, global_constraint=None, sakoe_chiba_radius=1):
     """Compute Dynamic Time Warping (DTW) similarity measure between (possibly multidimensional) time series and
