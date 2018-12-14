@@ -2,10 +2,35 @@
 The :mod:`tslearn.utils` module includes various utilities.
 """
 
-import numpy, mpmath, math
+import numpy, mpmath, math,os,sys
 from decimal import *
 
 __author__ = 'Romain Tavenard romain.tavenard[at]univ-rennes2.fr'
+
+def write_discretized_dataset(datasets,class_arrays,output_file_str):
+    dirname = os.path.abspath(os.path.dirname(sys.argv[0]))
+    file_location =  dirname + "/" + output_file_str
+    train_test_str = ["_TRAIN_DISCRETIZED","_TEST_DISCRETIZED"]
+    for u in range(0,2):
+        file_location = file_location + train_test_str[u]
+        with open(file_location, "w") as myfile:
+            for i in range(0,len(datasets[u])):
+                for j in range(0,len(datasets[u][i])):
+                    myfile.write(str(i+1) + " " + str(j+1) + " " + str(class_arrays[u][i]) + " " + datasets[u][i][j] + "\n")
+    return
+
+def multivar_final_symbolic_representation(dataset,variables,alphabet):
+    symbol_increment = 0
+    symbolic_association_dict = {}
+    for i in range(0,len(dataset)):
+        for j in range(0,len(dataset[i])):
+            if dataset[i][j] in symbolic_association_dict:
+                dataset[i][j] = symbolic_association_dict[dataset[i][j]]
+            else:
+                symbolic_association_dict[dataset[i][j]] = str(symbol_increment)
+                dataset[i][j] = symbolic_association_dict[dataset[i][j]]
+                symbol_increment = symbol_increment + 1
+    return
 
 
 def my_covariance_matrix(data,variables_size):
